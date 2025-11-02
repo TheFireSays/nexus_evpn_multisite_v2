@@ -1,0 +1,106 @@
+
+
+## Site 1 devices
+[site_1_br]
+dub-st1-br-lf1 ansible_host=1.1.1.10
+dub-st1-br-lf2 ansible_host=1.1.1.11
+
+[site_1_spines]
+dub-st1-sp1 ansible_host=1.1.1.12
+dub-st1-sp2 ansible_host=1.1.1.13
+
+[site_1_leafs]
+dub-st1-lf1 ansible_host=1.1.1.14
+dub-st1-lf2 ansible_host=1.1.1.15
+
+[site_1:children]
+site_1_br
+site_1_spines
+site_1_leafs
+
+## Site 2 devices
+[site_2_br]
+dub-st2-br-lf1 ansible_host=1.1.1.20
+dub-st2-br-lf2 ansible_host=1.1.1.21
+
+[site_2_spines]
+dub-st2-sp1 ansible_host=1.1.1.22
+dub-st2-sp2 ansible_host=1.1.1.23
+
+[site_2_leafs]
+dub-st2-lf1 ansible_host=1.1.1.24
+dub-st2-lf2 ansible_host=1.1.1.25
+
+[site_2:children]
+site_2_br
+site_2_spines
+site_2_leafs
+
+# Site 3 devices
+[site_3_br]
+dub-st3-br-lf1 ansible_host=1.1.1.30
+dub-st3-br-lf2 ansible_host=1.1.1.31
+
+[site_3_spines]
+dub-st3-sp1 ansible_host=1.1.1.32
+dub-st3-sp2 ansible_host=1.1.1.33
+
+[site_3_leafs]
+dub-st3-lf1 ansible_host=1.1.1.34
+dub-st3-lf2 ansible_host=1.1.1.35
+
+[site_3:children]
+site_3_br
+site_3_spines
+site_3_leafs
+
+
+## MGMT
+[mgmt]
+dub-mgmt-agg ansible_host=1.1.1.2
+
+# Layer groups
+[border:children]
+site_1_br
+site_2_br
+site_3_br
+
+[spines:children]
+site_1_spines
+site_2_spines
+site_3_spines
+
+[leafs:children]
+site_1_leafs
+site_2_leafs
+site_3_leafs
+
+[leafs:children]
+site_1_leafs
+site_2_leafs
+site_3_leafs
+
+[data_switches:children]
+border
+spines
+leafs
+
+# Management switches variables
+[mgmt:vars]
+ansible_connection=network_cli
+ansible_user=admin
+ansible_password=Firelab33
+ansible_network_os=nxos
+ansible_become=yes
+ansible_become_method=enable
+ansible_become_password=Firelab33
+
+# Data switches variables
+[data_switches:vars]
+ansible_connection=network_cli
+ansible_user=admin
+ansible_password=Firelab33
+ansible_network_os=nxos
+ansible_become=yes
+ansible_become_method=enable
+ansible_become_password=Firelab33
