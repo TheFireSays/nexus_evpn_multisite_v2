@@ -1,0 +1,38 @@
+---
+  - name: Create VRFs and apply VNI, route-distinguisher, and route-targets 
+    gather_facts: false
+    hosts: leafs
+      
+    tasks:
+      - name: Create VRF, apply VNI and route distinguisher
+        cisco.nxos.nxos_vrf_global:
+          config:
+            vrfs:
+              - name: '{{item.vrf_name }}'
+                description: 'VLAN {{ item.vlan }} | VNI 10{{ item.vlan }}'
+                rd: auto
+                vni:
+                 layer_3: true
+                 vni_number: 10{{ item.vlan}}
+            state: merged
+          loop: "{{ vrf }}"
+
+      - name: VRF address-family - apply RD and RT
+        cisco.nxos.nxos_vrf_af:
+          vrf: '{{ vrf_name}}'
+          afi: ipv4
+          route_target_both_auto_evpn: true
+          state: present
+        loop: "{{ vrf }}"
+                    
+      - name: Verify VRFs
+        cisco.nxos.nxos_command:
+          commands:
+            - show running-config | section ^vrf
+        register: print_vrfs
+
+      - name: Show configured VRFs
+        debug:
+          msg: |
+            === {{ inventory_hostname }} ===
+            "{{ print_vrfs.stdout[0] }}"

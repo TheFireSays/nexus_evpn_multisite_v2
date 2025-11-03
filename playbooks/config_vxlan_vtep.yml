@@ -1,0 +1,28 @@
+---
+- name: Configure VTEP interface
+  hosts: leafs
+  gather_facts: false
+
+  tasks:
+    - name: Create NVE interface
+      cisco.nxos.nxos_vxlan_vtep:
+        interface: "{{ nve.interface }}"
+        description: "{{ nve.description }}"
+        host_reachability: "{{ nve.host_reachability }}"
+        source_interface: "{{ nve.source_interface }}"
+        shutdown: "{{ nve.shutdown }}"
+        source_interface_hold_down_time: "{{ nve.source_interface_hold_down_time }}" 
+    
+    - name: Add member VNIs - L2 
+      cisco.nxos.nxos_vxlan_vtep_vni:
+        interface: "{{ nve.interface }}"
+        vni: "{{ item}}"
+        suppress_arp: true
+      loop: "{{ l2_vnis }}"
+    
+
+    - name: Add member VNIs - L3
+      cisco.nxos.nxos_vxlan_vtep_vni:
+        interface: "{{ nve.interface }}"
+        vni: "{{ item }}"
+      loop: "{{ l3_vnis }}"

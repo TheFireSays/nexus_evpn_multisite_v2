@@ -1,0 +1,131 @@
+device_info:
+    dev_model: Nexus9000 C9500v Chassis ("Supervisor Module")
+    dev_serial: 9Q3DT4NH49O
+    dev_vendor: Cisco
+    os_version: 10.5(1)
+interfaces:
+-   enabled: true
+    name: Ethernet1/1
+-   enabled: true
+    name: Ethernet1/2
+-   enabled: true
+    name: Ethernet1/3
+-   enabled: true
+    name: Ethernet1/4
+-   enabled: true
+    name: Ethernet1/5
+-   enabled: true
+    name: Ethernet1/6
+-   enabled: true
+    name: Ethernet1/7
+-   enabled: true
+    name: Ethernet1/8
+-   enabled: true
+    name: Ethernet1/9
+-   enabled: true
+    name: Ethernet1/10
+-   enabled: true
+    name: Ethernet1/11
+-   enabled: true
+    name: Ethernet1/12
+-   description: Downlink to dub-st1-sp1
+    enabled: true
+    mtu: 9216
+    name: port-channel211
+-   description: Downlink to dub-st1-sp2
+    enabled: true
+    mtu: 9216
+    name: port-channel212
+-   description: Downlink to dub-st2-sp1
+    enabled: true
+    mtu: 9216
+    name: port-channel221
+-   description: Downlink to dub-st2-sp2
+    enabled: true
+    mtu: 9216
+    name: port-channel222
+-   description: Downlink to dub-st3-sp1
+    enabled: true
+    mtu: 9216
+    name: port-channel231
+-   description: Downlink to dub-st3-sp2
+    enabled: true
+    mtu: 9216
+    name: port-channel232
+l3_interfaces:
+-   ipv4:
+    -   address: 30.30.30.25/30
+    name: port-channel211
+-   ipv4:
+    -   address: 30.30.30.29/30
+    name: port-channel212
+-   ipv4:
+    -   address: 30.30.30.33/30
+    name: port-channel221
+-   ipv4:
+    -   address: 30.30.30.37/30
+    name: port-channel222
+-   ipv4:
+    -   address: 30.30.30.41/30
+    name: port-channel231
+-   ipv4:
+    -   address: 30.30.30.45/30
+    name: port-channel232
+lag_interfaces:
+-   members:
+    -   member: Ethernet1/1
+        mode: active
+    -   member: Ethernet1/2
+        mode: active
+    name: port-channel211
+-   members:
+    -   member: Ethernet1/3
+        mode: active
+    -   member: Ethernet1/4
+        mode: active
+    name: port-channel212
+-   members:
+    -   member: Ethernet1/5
+        mode: active
+    -   member: Ethernet1/6
+        mode: active
+    name: port-channel221
+-   members:
+    -   member: Ethernet1/7
+        mode: active
+    -   member: Ethernet1/8
+        mode: active
+    name: port-channel222
+-   members:
+    -   member: Ethernet1/9
+        mode: active
+    -   member: Ethernet1/10
+        mode: active
+    name: port-channel231
+-   members:
+    -   member: Ethernet1/11
+        mode: active
+    -   member: Ethernet1/12
+        mode: active
+    name: port-channel232
+
+# BGP neighbors SSP <> SP
+bgp_neighbors:
+    - neighbor: 20.20.20.5
+      description: "dub-st1-sp1"
+      rr_client: true
+    - neighbor: 20.20.20.6
+      description: "dub-st1-sp2"
+      rr_client: true
+    - neighbor: 20.20.20.7
+      description: "dub-st2-sp1"
+      rr_client: true
+    - neighbor: 20.20.20.8
+      description: "dub-st2-sp2"
+      rr_client: true
+    - neighbor: 20.20.20.9
+      description: "dub-st3-sp1"
+      rr_client: true
+    - neighbor: 20.20.20.10
+      description: "dub-st3-sp2"
+      rr_client: true

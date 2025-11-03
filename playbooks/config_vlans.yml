@@ -1,0 +1,43 @@
+---
+- name: Create VLANs
+  hosts: leafs
+  gather_facts: false
+
+  tasks:
+    - name: Create host VLANs
+      cisco.nxos.nxos_vlans:
+        config: 
+          - vlan_id: "{{ item.vlan_id }}"
+            name: "{{ item.name }}"
+            enabled: "{{ item.enabled }}"
+            mapped_vni: "{{ item.mapped_vni }}"
+        state: merged
+      loop: "{{ vlans }}"
+
+    - name: Create transit VLANs
+      cisco.nxos.nxos_vlans:
+        config: 
+          - vlan_id: "{{ item.vlan_id }}"
+            name: "{{ item.name }}"
+            enabled: "{{ item.enabled }}"
+            mapped_vni: "{{ item.mapped_vni }}"
+        state: merged
+      loop: "{{ transit_vlans }}"
+
+    - name: Create Blackhole VLAN
+      cisco.nxos.nxos_vlans:
+        config:
+          - vlan_id: 999
+            name: "Blackhole_vlan"
+            enabled: false 
+
+    - name: Show VLANs command
+      cisco.nxos.nxos_command:
+        commands:
+          - "show vlan"
+      register: sh_vlans
+
+    - name: Print VLANs
+      ansible.builtin.debug:
+        var: sh_vlans.stdout_lines
+

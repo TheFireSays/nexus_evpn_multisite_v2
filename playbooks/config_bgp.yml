@@ -1,0 +1,91 @@
+---
+- name: BGP configuration
+  hosts: data_switches
+  gather_facts: false
+  vars:
+    asn: 65000
+    loopback0: "10.10.10.{{ ansible_host.split('.')[3] }}"
+    max_ecmp_paths: 16
+    bgp_keepalive: 3
+    bgp_holdtime: 9
+
+  tasks:
+    - name: Global BGP config
+      cisco.nxos.nxos_bgp_global:
+        config:
+          as_number: "{{ asn }}"
+          router_id: "{{ loopback0 }}"
+          log_neighbor_changes: true
+          
+    - name: BGP address-family config for route reflectors - SSPs and SPs
+      cisco.nxos.nxos_bgp_address_family:
+        config: 
+          as_number: "{{ asn }}"
+          address_family:
+            - afi: l2vpn
+              safi: evpn
+              maximum_paths:
+                parallel_paths: "{{ max_ecmp_paths }}"
+              retain:
+                route_target:
+                  retain_all: true
+              
+            - afi: ipv4
+              safi: unicast 
+              maximum_paths:
+                parallel_paths: "{{ max_ecmp_paths }}"
+      when: inventory_hostname not in groups['leafs']
+
+    - name: BGP address-family config for leafs
+      cisco.nxos.nxos_bgp_address_family:
+        config: 
+          as_number: "{{ asn }}"
+          address_family:
+            - afi: l2vpn
+              safi: evpn
+              route_reflector_client: true
+
+
+            - afi: ipv4
+              safi: unicast
+              route_reflector_client: true
+              maximum_paths:
+                parallel_paths: "{{ max_ecmp_paths }}"
+      when: inventory_hostname in groups['spines']
+
+    - name: Configure BGP neighbor settings globally
+      cisco.nxos.nxos_bgp_neighbor_address_family:
+        config:
+          as_number: "{{ asn }}"
+          neighbors:
+            - neighbor_address: "{{ bgp_neighbors.neighbor }}"
+              remote_as: "{{ asn }}"
+              description: "{{ bgp_neighbors.description }}"
+              update_source: loopback0
+              maximum_paths:
+                parallel_paths: "{{ max_ecmp_paths }}"
+              timers:
+                keepalive: "{{ bgp_keepalive }}"
+                holdtime: "{{ bgp_holdtime }}"
+      loop: "{{ bgp_neighbors }}"
+           
+    - name: Configure BGP neighbors for EVPN address-family
+      cisco.nxos.nxos_bgp_neighbor_address_family:
+        config:
+          as_number: "{{ asn }}"
+          neighbors:
+            - neighbor_address: "{{ bgp_neighbors.neighbor }}"
+              address_family: 
+                - afi: l2vpn
+                  safi: evpn
+                  send_community:
+                    both: true
+
+      loop: "{{ bgp_neighbors }}"
+      when: inventory_hostname in groups['leafs']
+
+
+what am i advertising? connected?
+transit vlan
+transit SVI
+  SS

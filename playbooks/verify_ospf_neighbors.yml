@@ -1,0 +1,39 @@
+---
+- name: Verify OSPF neighbors
+  hosts: data_switches
+  gather_facts: false
+
+  tasks:
+    - name: Show OSPF neighbors
+      cisco.nxos.nxos_command:
+        commands: show ip ospf neighbors
+      register: neighbors
+
+    - name: Parse 'show neighbors' output
+      ansible.utils.cli_parse:
+        text: "{{ neighbors.stdout[0] }}"
+        parser:
+          name: ansible.netcommon.ntc_templates
+          command: show ip ospf neighbor
+          os: cisco_nxos
+      register: parsed_output
+      
+    - name: Set parsed neighbors fact
+      set_fact:
+        parsed_neighbors: "{{ parsed_output.parsed }}"
+
+    - name: All full adjacencies
+      debug:
+        msg: "++ {{ inventory_hostname }} has all FULL OSPF adjacencies ++"
+      loop: "{{ parsed_neighbors }}"
+      when: "'Full' in item.state"
+    
+    - name: Check for incomplete adjacencies
+      debug:
+        msg: "{{ inventory_hostname }} has not fully established adjacency with {{ ip_to_hostname[item.neighbor_ipaddr] | default('Unknown-' + item.neighbor_ipaddr) }}"
+      loop: "{{ parsed_neighbors }}"
+      when: "'FULL' not in item.state"
+
+    
+
+

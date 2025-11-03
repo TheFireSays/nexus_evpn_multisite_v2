@@ -1,0 +1,86 @@
+---
+asn: 62000
+
+anycast_gw_mac: 3.0.0
+
+# VLANs
+vlans:
+  - vlan_id: 300
+    name: Classified_Secret
+    mapped_vni: 10300
+    enabled: true
+  - vlan_id: 400
+    name: Classified_Top_Secret
+    mapped_vni: 10400
+    enabled: true
+  - vlan_id: 500
+    name: Classified_Super_Duper_Secret
+    mapped_vni: 10500
+    enabled: true
+
+transit_vlans:
+  - vlan_id: "301"
+    name: VLAN_301
+    mapped_vni: 10301
+    enabled: true
+  - vlan_id: "401"
+    name: VLAN_401
+    mapped_vni: 10401
+    enabled: true
+  - vlan_id: "501"
+    name: VLAN_501
+    mapped_vni: 10501
+    enabled: true
+
+host_ports:
+  - name: e1/5
+    mode: trunk
+    trunk:
+      native_vlan: 999
+      allowed_vlans: 300,400,500
+  - name: e1/6
+    mode: trunk
+    trunk:
+      native_vlan: 999
+      allowed_vlans: 300,400,500
+
+access_vlans: [300,400,500]
+
+l2_vnis: 
+  - 10300
+  - 10400
+  - 10500
+l3_vnis: 
+  - 10301
+  - 10401
+  - 10501
+
+#VRFs
+vrf:
+  - vlan: 301
+    name: "Classified_Secret"
+  - vlan: 401
+    name: "Classified_Top_Secret"
+  - vlan: 501
+    name: "Confidential_information"
+
+# SVIs
+svi:
+  - name:  vlan300
+    ip: "50.50.130.1/24"
+    description: "VLAN 300 anycast gateway"
+  - name:  vlan301
+    ip: "50.50.230.1/24"
+    description: "Transit VLAN 301 gateway"
+  - name:  vlan400
+    ip: "50.50.140.1/24"
+    description: "VLAN 400 anycast gateway"
+  - name:  vlan401
+    ip: "50.50.240.1/24"
+    description: "Transit VLAN 401 gateway"
+  - name:  vlan500
+    ip: "50.50.150.1/24"
+    description: "VLAN 500 anycast gateway"
+  - name:  vlan501
+    ip: "50.50.250.1/24"
+    description: "Transit VLAN 501 gateway"

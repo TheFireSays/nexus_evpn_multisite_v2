@@ -1,0 +1,44 @@
+---
+- name: Save configuration to local directory
+  hosts: all
+  gather_facts: false
+
+  vars:
+    backup_dir: "{{ playbook_dir }}/../configs"
+
+  tasks:
+    - name: Backup config to file - NXOS
+      cisco.nxos.nxos_config:
+        backup: yes
+        backup_options:
+          filename: "{{ inventory_hostname }}.cfg"
+          dir_path: "{{ backup_dir }}"
+      register: backup_result
+      when: "'data_switches' in group_names"
+
+    - name: Backup config to file - IOS
+      cisco.ios.ios_config:
+        backup: yes
+        backup_options:
+          filename: "{{ inventory_hostname }}.cfg"
+          dir_path: "{{ backup_dir }}"
+      register: backup_result
+      when: "'mgmt_switches' in group_names"
+
+    - name: Read config from file
+      slurp:
+        src: "{{ backup_result.backup_path }}"
+      register: config_content
+      delegate_to: localhost
+      when: backup_result.backup_path is defined
+
+    - name: Create timestamp header in config file
+      copy:
+        content:  |
+          ! Configuration backup created: {{ now().strftime('%Y-%m-%d at %H:%M:%S %Z') }}
+          ! Backup source: {{ inventory_hostname }} ({{ ansible_host }})
+          !
+          {{ config_content.content | b64decode }}
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}.cfg"
+      delegate_to: localhost
+      when: backup_result.backup_path is defined

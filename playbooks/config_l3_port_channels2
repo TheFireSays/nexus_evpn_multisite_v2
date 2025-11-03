@@ -1,0 +1,48 @@
+---
+- name: Full configuration
+  hosts: data_switches
+  gather_facts: no
+  vars:
+    template: "{{ playbook_dir }}/../templates/data_switches.yml"
+  
+  tasks:
+    - name: Create port-channel interfaces
+      cisco.nxos.nxos_config:
+        lines:
+          - "interface {{ item.name }}"
+      loop: "{{ lag_interfaces }}"
+
+    - name: Configure port-channels as Layer 3 interfaces (no switchport)
+      cisco.nxos.nxos_config:
+        lines:
+          - "no switchport"
+        parents: "interface {{ item.name }}"
+      loop: "{{ lag_interfaces }}"
+      when: lag_interfaces is defined
+
+    - name: Set MTU on port-channels explicitly
+      cisco.nxos.nxos_config:
+        lines:
+          - "mtu {{ item.mtu }}"
+        parents: "interface {{ item.name }}"
+      loop: "{{ interfaces }}"
+      when: 
+        - interfaces is defined
+        - "'port-channel' in item.name"
+        - item.mtu is defined
+
+    - name: Configure interface properties (description, MTU, admin state)
+      cisco.nxos.nxos_interfaces:
+        config: "{{ interfaces }}"
+        state: merged
+
+    - name: Configure LAG membership (assign member interfaces)
+      cisco.nxos.nxos_lag_interfaces:
+        config: "{{ lag_interfaces }}"
+        state: merged
+      register: lag_result
+
+    - name: Configure routed interfaces (IP addresses)
+      cisco.nxos.nxos_l3_interfaces:
+        config: "{{ l3_interfaces }}"
+        state: merged

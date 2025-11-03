@@ -1,0 +1,46 @@
+---
+- name: Configure host ports
+  hosts: leafs
+  gather_facts: false
+
+  tasks:
+    - name: Clear L2 switchport config
+      cisco.nxos.nxos_config:
+          lines:
+            - no switchport
+          parents: "interface {{ item.name }}"
+      loop: "{{ host_ports }}"
+
+    - name: Ensure interfaces are L2 switchports
+      cisco.nxos.nxos_config:
+          lines:
+            - switchport
+          parents: "interface {{ item.name }}"
+      loop: "{{ host_ports }}"
+    
+    - name: Configure leaf switch access ports
+      cisco.nxos.nxos_l2_interfaces:
+        config: 
+          - name: Ethernet1/5
+            access:
+              vlan: "{{ access_vlans[0] }}"
+        state: merged
+      when: "'lf1' in inventory_hostname"
+
+    - name: Configure leaf switch access ports
+      cisco.nxos.nxos_l2_interfaces:
+        config: 
+          - name: Ethernet1/5
+            access:
+              vlan: "{{ access_vlans[1] }}"
+        state: merged
+      when: "'lf2' in inventory_hostname"
+
+    - name: Configure leaf switch access ports
+      cisco.nxos.nxos_l2_interfaces:
+        config: 
+          - name: Ethernet1/6
+            access:
+              vlan: "{{ access_vlans[2] }}"
+        state: merged
+      when: "'lf2' in inventory_hostname"

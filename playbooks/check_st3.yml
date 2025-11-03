@@ -1,0 +1,62 @@
+---
+# Quick verification of Site 3 after BFD removal
+- name: Verify Site 3 OSPF Status
+  hosts: dub-st3-sp1,dub-st3-sp2,dub-st3-lf1,dub-st3-lf2,dub-ssp1,dub-ssp2,dub-ssp3,dub-ssp4
+  gather_facts: false
+
+  tasks:
+    - name: Check OSPF neighbors
+      cisco.nxos.nxos_command:
+        commands:
+          - show ip ospf neighbor
+      register: ospf_neighbors
+
+    - name: Parse OSPF neighbors
+      ansible.utils.cli_parse:
+        text: "{{ ospf_neighbors.stdout[0] }}"
+        parser:
+          name: ansible.netcommon.ntc_templates
+          command: show ip ospf neighbor
+          os: cisco_nxos
+      register: parsed_neighbors
+
+    - name: Check for incomplete adjacencies
+      set_fact:
+        incomplete_neighbors: "{{ parsed_neighbors.parsed | rejectattr('state', 'search', 'FULL') | list }}"
+
+    - name: All full adjacencies
+      debug:
+        msg: "++ {{ inventory_hostname }} has all FULL OSPF adjacencies ++"
+      when: incomplete_neighbors | length == 0
+    
+    - name: Display incomplete adjacencies
+      debug:
+        msg: "{{ inventory_hostname }} has not fully established adjacency with {{ item.neighbor_ipaddr }} on {{ item.interface }} - State: {{ item.state }}"
+      loop: "{{ incomplete_neighbors }}"
+      when: incomplete_neighbors | length > 0
+
+- name: Summary
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Collect results
+      set_fact:
+        all_devices: "{{ groups['data_switches'] | map('extract', hostvars) | list }}"
+
+    - name: Count healthy devices
+      set_fact:
+        total_checked: 8
+        healthy_count: "{{ all_devices | selectattr('incomplete_neighbors', 'defined') | selectattr('incomplete_neighbors', 'equalto', []) | list | length }}"
+
+    - name: Display summary
+      debug:
+        msg:
+          - "========================================="
+          - "SITE 3 VERIFICATION SUMMARY"
+          - "========================================="
+          - "Devices checked: {{ total_checked }}"
+          - "Devices with all FULL: {{ healthy_count }}"
+          - "Devices with issues: {{ total_checked - healthy_count }}"
+          - ""
+          - "{% if healthy_count == total_checked %}✅✅✅ SITE 3 IS HEALTHY ✅✅✅{% else %}⚠️  Some adjacencies still forming or need attention{% endif %}"

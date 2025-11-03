@@ -1,0 +1,8 @@
+--- 
+nve:
+  interface: nve1
+  description: VXLAN tunnel endpoint
+  host_reachability: true
+  source_interface: loopback1
+  shutdown: false
+  source_interface_hold_down_time: 120

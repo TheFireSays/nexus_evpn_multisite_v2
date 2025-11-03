@@ -1,0 +1,53 @@
+---
+- name: Create VLANs and SVIs. Place SVIs in appropriate VRF.
+  hosts: leafs
+  gather_facts: false
+
+  tasks:
+    - name: Configure interface VRF membership
+      cisco.nxos.nxos_vrf_interfaces:
+        config:
+          - name: "Vlan{{ item.vlan }}"
+            vrf_name: "{{ item.name }}"
+        state: merged
+      loop: "{{ vrf }}"
+
+    - name: Create host and transit SVIs
+      cisco.nxos.nxos_l3_interfaces:
+        config:
+          - name: "{{ item.name }}"
+            ipv4:
+              - address: "{{ item.ip}}"
+        state: merged
+      loop: "{{ svi }}"
+
+    - name: Add SVI description
+      cisco.nxos.nxos_interfaces: 
+        config:
+          - name: "{{ item.name }}"
+            description: "{{ item.description }}"
+            enabled: true
+        state: merged
+      loop: "{{ svi }}"
+
+    - name: Enable anycast gateway on host SVIs
+      cisco.nxos.nxos_config:
+        lines:
+          - "fabric forwarding mode anycast-gateway"
+        parents: "interface {{ item.name }}"
+      loop: "{{ svi }}"
+
+    - name: Configure fabric forwarding, global anycast mac
+      cisco.nxos.nxos_config:
+        lines:
+          - "fabric forwarding anycast-gateway-mac {{ anycast_gw_mac }}"
+
+    - name: Show SVIs command
+      cisco.nxos.nxos_command:
+        commands:
+          - "show ip interface brief vrf all | i Vlan"
+      register: sh_svis
+
+    - name: Show SVIs
+      ansible.builtin.debug:
+        var: sh_svis.stdout_lines

@@ -1,0 +1,60 @@
+---
+- name: Configure L3 Port-Channels
+  hosts: data_switches
+  gather_facts: false
+  
+  tasks:
+    - name: Configure LAG membership
+      cisco.nxos.nxos_lag_interfaces:
+        config: "{{ lag_interfaces }}"
+        state: merged
+      when: lag_interfaces is defined
+
+    - name: Configure L3 interaces with an IP address
+      cisco.nxos.nxos_config:
+        lines:
+          - "no switchport"
+          - "ip address {{ item.ipv4[0].address }}"
+          - "no shutdown"
+        parents: "interface {{ item.name }}"
+      loop: "{{ l3_interfaces }}"
+      when: l3_interfaces is defined
+      register: config_result
+      tags: l3
+
+    - name: Add descriptions and MTU to port-channels
+      cisco.nxos.nxos_config:
+        lines:
+          - "description {{ item.description }}"
+          - "mtu {{ item.mtu }}"
+          - "no ip redirects"
+          - "no ip ospf bfd"
+        parents: "interface {{ item.name }}"
+      loop: "{{ interfaces }}"
+      when: 
+        - interfaces is defined
+        - "'port-channel' in item.name"
+
+    - name: Verify IP addresses
+      cisco.nxos.nxos_command:
+        commands:
+          - show ip interface brief | include port-channel
+      register: ip_check
+
+    - name: Display IP configuration
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} ===
+          {{ ip_check.stdout[0] }}
+
+    - name: Verify port-channel status
+      cisco.nxos.nxos_command:
+        commands:
+          - show port-channel summary
+      register: po_check
+
+    - name: Display port-channel status
+      ansible.builtin.debug:
+        msg: |
+          === {{ inventory_hostname }} Port-Channels ===
+          {{ po_check.stdout[0] }}

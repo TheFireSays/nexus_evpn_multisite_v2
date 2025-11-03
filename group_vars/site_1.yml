@@ -1,0 +1,99 @@
+---
+# BGP
+asn: 61000
+
+## BGP neighbors - leaf <> spine
+bgp_neighbors:
+  - neighbor: 20.20.20.5
+    description: "dub-st1-sp1"
+    rr_client: false
+  
+  - neighbor: 20.20.20.6
+    description: "dub-st1-sp2"
+    rr_client: false
+
+
+anycast_gw_mac: 1.0.0
+
+# VLANs
+vlans:
+  - vlan_id: 100
+    name: "Public_information"
+    mapped_vni: 10100
+    enabled: true
+  - vlan_id: 200
+    name: "Confidential_information"
+    mapped_vni: 10200
+    enabled: true
+  - vlan_id: 300
+    name: "Classified_Secret"
+    mapped_vni: 10300
+    enabled: true
+
+transit_vlans:
+  - vlan_id: "101"
+    name: VLAN_101
+    mapped_vni: 10101
+    enabled: true
+  - vlan_id: "201"
+    name: VLAN_201
+    mapped_vni: 10201
+    enabled: true
+  - vlan_id: "301"
+    name: VLAN_301
+    mapped_vni: 10301
+    enabled: true
+
+host_ports:
+  - name: e1/5
+    mode: trunk
+    trunk:
+      native_vlan: 999
+      allowed_vlans: 100,200,300
+  - name: e1/6
+    mode: trunk
+    trunk:
+      native_vlan: 999
+      allowed_vlans: 100,200,300
+
+access_vlans: [100,200,300]
+
+l2_vnis: 
+  - 10100
+  - 10200
+  - 10300
+l3_vnis: 
+  - 10101
+  - 10201
+  - 10301
+
+#VRFs
+vrf:
+  - vlan: 101
+    name: "Public_information"
+  - vlan: 201
+    name: "Confidential_information"
+  - vlan: 301
+    name: "Classified_Secret"
+
+# SVIs
+svi:
+  - name:  vlan100
+    ip: "50.50.110.1/24"
+    description: "VLAN 100 anycast gateway"
+  - name:  vlan101
+    ip: "50.50.210.1/24"
+    description: "Transit VLAN 101 gateway"
+  - name:  vlan200
+    ip: "50.50.120.1/24"
+    description: "VLAN 200 anycast gateway"
+  - name:  vlan201
+    ip: "50.50.220.1/24"
+    description: "Transit VLAN 201 gateway"
+  - name:  vlan300
+    ip: "50.50.130.1/24"
+    description: "VLAN 300 anycast gateway"
+  - name:  vlan301
+    ip: "50.50.230.1/24"
+    description: "Transit VLAN 301 gateway"
+  

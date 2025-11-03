@@ -1,0 +1,22 @@
+---
+- name: Configure TCAM for ARP suppression
+  hosts: leafs
+  gather_facts: false
+
+  tasks:
+    - name: Configure TCAM region for ARP-Ether
+      cisco.nxos.nxos_config:
+        lines:
+          - hardware access-list tcam region racl 512
+          - hardware access-list tcam region arp-ether 256 double-wide
+
+    - name: Save configuration
+      cisco.nxos.nxos_config:
+        save_when: always
+
+    - name: Notify user about required reload
+      ansible.builtin.debug:
+        msg: |
+          TCAM configuration complete!
+          You MUST reload the switch for changes to take effect.
+          Run: reload

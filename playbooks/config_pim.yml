@@ -1,0 +1,99 @@
+--- 
+- name: Configure PIM sparse mode and Anycast RP
+  hosts: data_switches
+  gather_facts: false
+
+  tasks:
+    - name: Create anycast loopback interface on superspines
+      cisco.nxos.nxos_interfaces:
+        config:
+          - name: "{{ item.name }}"
+            description: "{{ item.description }}"
+            enabled: true
+        state: merged
+      loop: "{{ loopbacks }}"
+      when: inventory_hostname in groups['superspines']
+
+    - name: Apply IP address to anycast loopback
+      cisco.nxos.nxos_l3_interfaces:
+        config:
+          - name: "{{ item.name }}"
+            ipv4:
+              - address: "{{ item.ipv4.address }}"
+        state: merged
+      loop: "{{ loopback_ips }}"
+      when: inventory_hostname in groups['superspines']
+
+    - name: Configure PIM RP
+      cisco.nxos.nxos_pim_rp_address: 
+        rp_address: "{{ pim_rp_address }}"
+        state: present
+
+    - name: Configure PIM-SM on L3 interfaces
+      cisco.nxos.nxos_pim_interface:
+        interface: "{{ item.name }}"
+        state: present
+      loop: "{{ l3_interfaces }}"
+
+    - name: Configure PIM-SM on loopback0
+      cisco.nxos.nxos_pim_interface:
+        interface: loopback0
+        state: present
+    
+    - name: Add loopback0 to OSPF
+      cisco.nxos.nxos_config:
+        lines: "ip router ospf 100 area 0.0.0.0"
+        parents:
+          - interface loopback0
+
+    - name: Add anycast RP loopback interface to OSPF
+      cisco.nxos.nxos_config:
+        lines: "ip router ospf 100 area 0.0.0.0"
+        parents:
+          - interface loopback254
+      when: inventory_hostname in groups['superspines']
+
+    - name: Enable PIM sparse mode on anycast RP loopback
+      cisco.nxos.nxos_pim_interface:
+        interface: loopback254
+        sparse: true
+        state: present
+      when: inventory_hostname in groups['superspines']
+    
+    - name: Enable PIM sparse mode on all routed interfaces
+      cisco.nxos.nxos_pim_interface:
+        interface: "{{ item.name }}"
+        sparse: true
+        state: present
+      loop: "{{ l3_interfaces }}"
+
+    - name: Configure anycast RP peers
+      cisco.nxos.nxos_config:
+        lines: "ip pim anycast-rp {{ pim_rp_address }} {{ item }}"
+      loop: "{{ anycast_rp_peers }}"
+      when: inventory_hostname in groups['superspines']
+
+    - name: Verify PIM neighbors
+      cisco.nxos.nxos_command:
+        commands:
+          - "show ip pim neighbor"
+      register: pim_neighbors
+      tags: verify
+
+    - name: Verify PIM RP
+      cisco.nxos.nxos_command:
+        commands:
+          - "show ip pim rp"
+      register: pim_rp
+      tags: verify
+
+    - name: Display PIM neighbors
+      debug:
+        var: pim_neighbors.stdout_lines
+      tags: verify
+
+    - name: Display PIM RP
+      debug:
+        var: pim_rp.stdout_lines
+      tags: verify
+    
