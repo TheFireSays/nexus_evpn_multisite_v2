@@ -7,6 +7,6 @@
     - name: Scan and add host keys
       shell: |
         ssh-keyscan -H {{ item }} >> ~/.ssh/known_hosts
-      loop: "{{ groups['all'] }}"
+      loop: "{{ inventory_hostname }}"
       delegate_to: localhost
       run_once: true
