@@ -1,0 +1,114 @@
+! Device {{ inventory_hostname }}
+! Generated via Ansible on {{ ansible_date_time.date }}
+
+hostname {{ hostname }}
+ip domain-name {{ domain_name }}
+
+! Enabled features
+{{% for feature in features %}}
+feature {{ feature }}
+{{% endfor %}}
+
+nv overlay evpn
+
+! Anycast GW MAC
+fabric forwarding anycast-gateway-mac {{ anycast_gw_mac }}
+
+! Multicast
+ip multicast-routing
+ip pim log neighbor changes
+ip pim rp-address {{ pim.rp_address}}
+
+! VLANs
+{{% for vlan in vlans %}}
+vlan {{ vlans.id }}
+  name {{ vlans.name }}
+  {{% if vlans.vn_segment is defined %}}
+  vn-segment {{ vlans.vn_segment }}
+{{% endif %}}
+{{% endfor %}}
+
+! VRFs
+{{% for vrf in vrfs %}}
+vrf context {{ vrf.name }}
+
+{{% endfor %}}
+
+! Switchports
+{{% for interface in l2_interfaces %}}
+interface {{ interface.name }}
+  description {{ interface.description }}
+  switchport
+  mtu {{ interface.mtu }} 
+  switchport mode {{ interface.port_mode }}
+  {{% if port_mode == 'access' %}}
+  switchport access vlan {{ interface.access_vlan }}
+  {{% elif port_mode == 'trunk' %}}
+  swichport trunk allowed vlan == {{ interface.allowed_vlans }}
+{{% endif %}}
+{{% endfor %}} 
+
+! Routed ports
+{{% for interface in l3_interfaces %}}
+interface {{ interface.name }}
+  no switchport
+  !
+  {{% if interface.vrf is defined %}}
+  vrf member {{ interface.vrf }}
+  {{% endif %}}
+  !
+  description {{ interface.description }}
+  ip address (( interface.ip )){{ interface.cidr_mask }}
+  mtu {{ interface.mtu }}
+  no shutdown
+  !
+  {{% if interface.pim_sparse = true %}}
+  ip pim sparse-mode
+  {{% endif %}}
+  !
+  {{% if interface.ospf == true %}}
+  ip ospf network point-to-point
+  ip router ospf {{ ospf.process_id }} area {{ ospf.area }}
+  ip ospf bfd
+  {{% endif %}}
+  {{% endfor %}}
+
+! OSPF
+router ospf {{ ospf.process_id }}
+  router-id {{ interfaces.loopback0.ip}}
+  log-adjacency-changes detail
+  {{% for network in ospf.networks %}}
+  network {{ network.network }} {{ network.mask }} area {{ ospf.area }}
+
+! BGP
+router bgp {{ bgp.asn }}
+  router-id {{ interfaces.loopback0.ip}}
+  address-family ipv4 unicast
+    maximum-paths {{ bgp.max_paths }}
+    maximum-paths ibgp {{ bgp.max_paths }}
+  address-family l2vpn evpn
+    maximum-paths {{ bgp.max_paths }}
+    maximum-paths ibgp {{ bgp.max_paths }}
+!
+  {{% for neighbor in bgp.neighbors %}}
+    neighbor {{ neighbor.neighbor }}    
+    remote-as {{ neighbor.asn }}
+    update-source {{ interfaces.loopback0.ip}}
+    address-family ipv4 unicast
+    address-family l2vpn evpn
+      send-community both
+  {{% endfor %}}
+
+! NVE interface
+interface nve{{ nve.id }}
+  description {{ nve.description }}
+  host-reachability protocol bgp
+  source-interface {{ interfaces.loopback1.ip }}
+  source-interface hold timer 300
+  !
+  {{% for vni in nve.vnis %}}
+  member vni {{ vni }}
+  {{% endfor %}}
+  no shutdown
+
+
